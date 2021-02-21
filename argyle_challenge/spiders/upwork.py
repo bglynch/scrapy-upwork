@@ -1,0 +1,95 @@
+import os
+import json
+import math
+import shutil
+from scrapy import Spider, Request
+from scrapy.exceptions import CloseSpider
+from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from argyle_challenge import config as cf
+import time
+
+class UpworkSpider(Spider):
+    name = 'upwork'
+    allowed_domains = ['upwork.com']
+    login_url = 'https://www.upwork.com/ab/account-security/login'
+    api_url = 'https://www.upwork.com/ab/find-work/api/feeds/search?user_location_match=1'
+    headers: dict = None
+    item_count: int = None
+    max_item_count: int = 100
+
+    def __init__(self, name=None, **kwargs):
+        super().__init__(name, **kwargs)
+        # shutil.rmtree('../info/errors', ignore_errors=True)
+
+
+    def start_requests(self):
+        # create selenium driver and get login page
+        driver = webdriver.Chrome('../chromedriver')
+        driver.get(self.login_url)
+        try:
+            element_present = EC.visibility_of_element_located((By.XPATH, '//*[@id="login_username"]'))
+            WebDriverWait(driver, 10).until(element_present)
+        except TimeoutException:
+            driver.save_screenshot("../info/errors/screenshot.png")
+            with open('../info/errors/page.html', 'w') as file:
+                file.write(driver.page_source)
+            driver.quit()
+            raise CloseSpider('Timeout exception when getting the login page')
+
+        # fill username and hit enter
+        driver.find_element_by_xpath('//*[@id="login_username"]').click()
+        driver.find_element_by_xpath('//*[@id="login_username"]').send_keys(cf.arg_username)
+        driver.find_element_by_xpath('//*[@id="login_password_continue"]').click()
+        try:
+            element_present = EC.visibility_of_element_located((By.XPATH, '//*[@id="login_password"]'))
+            WebDriverWait(driver, 10).until(element_present)
+        except TimeoutException:
+            driver.save_screenshot("../info/errors/screenshot.png")
+            with open('../info/errors/page.html', 'w') as file:
+                file.write(driver.page_source)
+            driver.quit()
+            raise CloseSpider('Timeout exception when getting the login page')
+
+        # fill in password and hit enter
+        driver.find_element_by_xpath('//*[@id="login_password"]').click()
+        driver.find_element_by_xpath('//*[@id="login_password"]').send_keys('Argyleawesome123!')
+        driver.find_element_by_xpath('//*[@id="login_control_continue"]').click()
+        try:
+            element_present = EC.visibility_of_element_located((By.XPATH, '//*[contains(@class, "job-title-link")]'))
+            WebDriverWait(driver, 15).until(element_present)
+        except TimeoutException:
+            driver.save_screenshot("../info/errors/screenshot.png")
+            with open('../info/errors/page.html', 'w') as file:
+                file.write(driver.page_source)
+            driver.quit()
+            raise CloseSpider('Timeout exception after submiting password')
+
+        cookies_string = '; '.join([f"{cookie.get('name')}={cookie.get('value')}" for cookie in driver.get_cookies()])
+
+        self.headers = {
+            'x-requested-with': 'XMLHttpRequest',
+            'cookie': cookies_string
+        }
+        driver.quit()
+        yield Request(url=self.api_url, headers=self.headers)
+
+    def parse(self, response):
+        # get pagination data from api
+        data = json.loads(response.body)
+        # TODO check api has the expected keys
+        item_count = data.get('paging').get('total')
+        number_of_pages = math.ceil(item_count / self.max_item_count)
+        for page_number in range(number_of_pages):
+            request = f"https://www.upwork.com/ab/find-work/api/feeds/search?paging={page_number};{item_count}&user_location_match=1"
+            yield Request(url=request, headers=self.headers, callback=self.get_data_from_api)
+
+    def get_data_from_api(self, response):
+        data = json.loads(response.body)
+        items = data.get('results')
+        for item in items:
+            print(item)
+
