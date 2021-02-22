@@ -26,6 +26,7 @@ class UpworkSpider(Spider):
     driver = webdriver.Chrome('../chromedriver')
     secret_header_text = "Let's make sure it's you"
     recaptcha_header = "Please verify you are a human"
+    found_jobs: list[str]
 
     def __init__(self, name=None, **kwargs):
         super().__init__(name, **kwargs)
@@ -119,3 +120,28 @@ class UpworkSpider(Spider):
         sel = Selector(text=self.driver.page_source)
         text = sel.xpath(text_xpath).get()
         return text == text_check
+
+    def transform_item_to_job(self, item: dict):
+        job = Job()
+        job.website = self.allowed_domains[0]
+        job.set_url(item.get('ciphertext', None))
+        job.title = item.get('title', None)
+        job.set_description(item.get('description', None))
+        job.date_posted = item.get('createdOn', None)
+        job.duration = item.get('duration', None)
+        job.engagement = item.get('engagement', None)
+        job.experience_level = item.get('tierText', None)
+        job.experience_level = item.get('tierText', None)
+        job.location_mandatory = item.get('prefFreelancerLocationMandatory', None)
+        job.set_freelancer_location(item.get('prefFreelancerLocation', None))
+        job.set_attributes(item.get('attrs'))
+        job.service = item.get('occupations').get('oservice').get('prefLabel')
+
+        client: dict = item.get('client')
+        job.client.set_country(client.get('location').get('country'))
+        job.client.set_payment_verified(client.get('paymentVerificationStatus'))
+        job.client.rating = client.get('totalFeedback')
+        job.client.reviews_count = client.get('totalReviews')
+
+        job.payment.currency = item.get('amount').get('currencyCode')
+        job.payment.set_type_and_amount(item)
