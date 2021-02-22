@@ -39,6 +39,15 @@ class UpworkSpider(Spider):
         # create selenium driver and get login page
         self.driver.get(self.login_url)
 
+        # login - reCaptcha
+        if self.check_text_equals('//*[@class="page-title"]/h1/text()', self.recaptcha_header):
+            input('''
+            PAUSING SPIDER FOR RECAPTCHA...
+              - complete the recaptha
+              - once complete, press enter in the terminal to continue the spider
+              
+              ''')
+
         # login - username page
         username_input_box = '//*[@id="login_username"]'
         username_continue_btn = '//*[@id="login_password_continue"]'
@@ -58,16 +67,9 @@ class UpworkSpider(Spider):
             self.check_html_element_exists(secret_input_box, 15, 'Timeout exception when getting the password page')
             self.form_input_and_click_btn(secret_input_box, cf.arg_secret_answer, secret_continue_btn)
 
-        # login - reCaptcha
-        if self.check_text_equals('//*[@class="page-title"]/h1/text()', self.recaptcha_header):
-            input('''
-            PAUSING SPIDER FOR RECAPTCHA...
-              - complete the recaptha
-              - once complete, press enter in the terminal to continue the spider
-              
-              ''')
-
         # logged in - list view page
+        thumbs_down_btn = '//*[@class="job-feedback"]'
+        self.check_html_element_exists(thumbs_down_btn, 15, 'Timeout exception when getting the list view page')
         cookies_string = '; '.join(
             [f"{cookie.get('name')}={cookie.get('value')}" for cookie in self.driver.get_cookies()]
         )
@@ -77,44 +79,6 @@ class UpworkSpider(Spider):
         }
         self.driver.quit()
         yield Request(url=self.api_url, headers=self.headers)
-
-        # try:
-        #     element_present = EC.visibility_of_element_located((By.XPATH, '//*[@id="login_username"]'))
-        #     WebDriverWait(self.driver, 10).until(element_present)
-        # except TimeoutException:
-        #     self.driver.save_screenshot("../info/errors/screenshot.png")
-        #     with open('../info/errors/page.html', 'w') as file:
-        #         file.write(self.driver.page_source)
-        #     self.driver.quit()
-        #     raise CloseSpider('Timeout exception when getting the login page')
-
-        # fill username and hit enter
-        # self.driver.find_element_by_xpath('//*[@id="login_username"]').click()
-        # self.driver.find_element_by_xpath('//*[@id="login_username"]').send_keys(cf.arg_username)
-        # self.driver.find_element_by_xpath('//*[@id="login_password_continue"]').click()
-        # try:
-        #     element_present = EC.visibility_of_element_located((By.XPATH, '//*[@id="login_password"]'))
-        #     WebDriverWait(self.driver, 10).until(element_present)
-        # except TimeoutException:
-        #     self.driver.save_screenshot("../info/errors/screenshot.png")
-        #     with open('../info/errors/page.html', 'w') as file:
-        #         file.write(self.driver.page_source)
-        #     self.driver.quit()
-        #     raise CloseSpider('Timeout exception when getting the login page')
-
-        # fill in password and hit enter
-        # self.driver.find_element_by_xpath('//*[@id="login_password"]').click()
-        # self.driver.find_element_by_xpath('//*[@id="login_password"]').send_keys('Argyleawesome123!')
-        # self.driver.find_element_by_xpath('//*[@id="login_control_continue"]').click()
-        # try:
-        #     element_present = EC.visibility_of_element_located((By.XPATH, '//*[contains(@class, "job-title-link")]'))
-        #     WebDriverWait(self.driver, 15).until(element_present)
-        # except TimeoutException:
-        #     self.driver.save_screenshot("../info/errors/screenshot.png")
-        #     with open('../info/errors/page.html', 'w') as file:
-        #         file.write(self.driver.page_source)
-        #     self.driver.quit()
-        #     raise CloseSpider('Timeout exception after submiting password')
 
     def parse(self, response):
         # get pagination data from api
@@ -142,6 +106,7 @@ class UpworkSpider(Spider):
         try:
             element_present = EC.visibility_of_element_located((By.XPATH, element_xpath))
             WebDriverWait(self.driver, wait_time).until(element_present)
+            time.sleep(2)
         except TimeoutException:
             self.driver.save_screenshot("../info/errors/screenshot.png")
             with open('../info/errors/page.html', 'w') as file:
