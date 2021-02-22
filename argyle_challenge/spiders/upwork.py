@@ -4,6 +4,7 @@ import math
 import shutil
 from scrapy import Spider, Request
 from scrapy.exceptions import CloseSpider
+from scrapy.selector import Selector
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
@@ -23,12 +24,18 @@ class UpworkSpider(Spider):
     max_item_count: int = 100
     driver = webdriver.Chrome('../chromedriver')
     secret_header_text = "Let's make sure it's you"
+    recaptcha_header = "Please verify you are a human"
 
     def __init__(self, name=None, **kwargs):
         super().__init__(name, **kwargs)
         # shutil.rmtree('../info/errors', ignore_errors=True)
 
     def start_requests(self):
+        """
+        Handles the login portion of the spider
+        :return: request to the upwork api
+        """
+
         # create selenium driver and get login page
         self.driver.get(self.login_url)
 
@@ -36,24 +43,29 @@ class UpworkSpider(Spider):
         username_input_box = '//*[@id="login_username"]'
         username_continue_btn = '//*[@id="login_password_continue"]'
         self.check_html_element_exists(username_input_box, 15, 'Timeout exception when getting the login page')
-        self.form_input_and_click(username_input_box, cf.arg_username, username_continue_btn)
+        self.form_input_and_click_btn(username_input_box, cf.arg_username, username_continue_btn)
 
         # login - password page
         password_input_box = '//*[@id="login_password"]'
         password_continue_btn = '//*[@id="login_control_continue"]'
         self.check_html_element_exists(password_input_box, 15, 'Timeout exception when getting the password page')
-        self.form_input_and_click(password_input_box, cf.arg_password, password_continue_btn)
+        self.form_input_and_click_btn(password_input_box, cf.arg_password, password_continue_btn)
 
         # login - secret answer page
-        if 'h1' == self.secret_header_text:
+        if self.check_text_equals('//h1/descendant::*/text()', self.secret_header_text):
             secret_input_box = '//*[@id="login_deviceAuthorization_answer"]'
             secret_continue_btn = '//*[@id="login_control_continue"]'
             self.check_html_element_exists(secret_input_box, 15, 'Timeout exception when getting the password page')
-            self.form_input_and_click(secret_input_box, cf.arg_secret_answer, secret_continue_btn)
+            self.form_input_and_click_btn(secret_input_box, cf.arg_secret_answer, secret_continue_btn)
 
         # login - reCaptcha
-        if 'h1' == self.recaptch_header:
-            input("Please complete the reCaptcha...\n...\n...\n...")
+        if self.check_text_equals('//*[@class="page-title"]/h1/text()', self.recaptcha_header):
+            input('''
+            PAUSING SPIDER FOR RECAPTCHA...
+              - complete the recaptha
+              - once complete, press enter in the terminal to continue the spider
+              
+              ''')
 
         # logged in - list view page
         cookies_string = '; '.join(
@@ -121,7 +133,7 @@ class UpworkSpider(Spider):
             print(item)
 
     # class helper functions ===========================================================================================
-    def form_input_and_click(self, input_xpath: str, input_value: str, continue_btn_xpath: str):
+    def form_input_and_click_btn(self, input_xpath: str, input_value: str, continue_btn_xpath: str):
         self.driver.find_element_by_xpath(input_xpath).click()
         self.driver.find_element_by_xpath(input_xpath).send_keys(input_value)
         self.driver.find_element_by_xpath(continue_btn_xpath).click()
@@ -136,3 +148,8 @@ class UpworkSpider(Spider):
                 file.write(self.driver.page_source)
             self.driver.quit()
             raise CloseSpider(fail_message)
+
+    def check_text_equals(self, text_xpath: str, text_check: str):
+        sel = Selector(text=self.driver.page_source)
+        text = sel.xpath(text_xpath).get()
+        return text == text_check
