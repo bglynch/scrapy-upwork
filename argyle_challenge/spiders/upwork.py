@@ -12,6 +12,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from argyle_challenge import config as cf
 import time
 
+
 class UpworkSpider(Spider):
     name = 'upwork'
     allowed_domains = ['upwork.com']
@@ -20,62 +21,88 @@ class UpworkSpider(Spider):
     headers: dict = None
     item_count: int = None
     max_item_count: int = 100
+    driver = webdriver.Chrome('../chromedriver')
+    secret_header_text = "Let's make sure it's you"
 
     def __init__(self, name=None, **kwargs):
         super().__init__(name, **kwargs)
         # shutil.rmtree('../info/errors', ignore_errors=True)
 
-
     def start_requests(self):
         # create selenium driver and get login page
-        driver = webdriver.Chrome('../chromedriver')
-        driver.get(self.login_url)
-        try:
-            element_present = EC.visibility_of_element_located((By.XPATH, '//*[@id="login_username"]'))
-            WebDriverWait(driver, 10).until(element_present)
-        except TimeoutException:
-            driver.save_screenshot("../info/errors/screenshot.png")
-            with open('../info/errors/page.html', 'w') as file:
-                file.write(driver.page_source)
-            driver.quit()
-            raise CloseSpider('Timeout exception when getting the login page')
+        self.driver.get(self.login_url)
 
-        # fill username and hit enter
-        driver.find_element_by_xpath('//*[@id="login_username"]').click()
-        driver.find_element_by_xpath('//*[@id="login_username"]').send_keys(cf.arg_username)
-        driver.find_element_by_xpath('//*[@id="login_password_continue"]').click()
-        try:
-            element_present = EC.visibility_of_element_located((By.XPATH, '//*[@id="login_password"]'))
-            WebDriverWait(driver, 10).until(element_present)
-        except TimeoutException:
-            driver.save_screenshot("../info/errors/screenshot.png")
-            with open('../info/errors/page.html', 'w') as file:
-                file.write(driver.page_source)
-            driver.quit()
-            raise CloseSpider('Timeout exception when getting the login page')
+        # login - username page
+        username_input_box = '//*[@id="login_username"]'
+        username_continue_btn = '//*[@id="login_password_continue"]'
+        self.check_html_element_exists(username_input_box, 15, 'Timeout exception when getting the login page')
+        self.form_input_and_click(username_input_box, cf.arg_username, username_continue_btn)
 
-        # fill in password and hit enter
-        driver.find_element_by_xpath('//*[@id="login_password"]').click()
-        driver.find_element_by_xpath('//*[@id="login_password"]').send_keys('Argyleawesome123!')
-        driver.find_element_by_xpath('//*[@id="login_control_continue"]').click()
-        try:
-            element_present = EC.visibility_of_element_located((By.XPATH, '//*[contains(@class, "job-title-link")]'))
-            WebDriverWait(driver, 15).until(element_present)
-        except TimeoutException:
-            driver.save_screenshot("../info/errors/screenshot.png")
-            with open('../info/errors/page.html', 'w') as file:
-                file.write(driver.page_source)
-            driver.quit()
-            raise CloseSpider('Timeout exception after submiting password')
+        # login - password page
+        password_input_box = '//*[@id="login_password"]'
+        password_continue_btn = '//*[@id="login_control_continue"]'
+        self.check_html_element_exists(password_input_box, 15, 'Timeout exception when getting the password page')
+        self.form_input_and_click(password_input_box, cf.arg_password, password_continue_btn)
 
-        cookies_string = '; '.join([f"{cookie.get('name')}={cookie.get('value')}" for cookie in driver.get_cookies()])
+        # login - secret answer page
+        if 'h1' == self.secret_header_text:
+            secret_input_box = '//*[@id="login_deviceAuthorization_answer"]'
+            secret_continue_btn = '//*[@id="login_control_continue"]'
+            self.check_html_element_exists(secret_input_box, 15, 'Timeout exception when getting the password page')
+            self.form_input_and_click(secret_input_box, cf.arg_secret_answer, secret_continue_btn)
 
+        # login - reCaptcha
+        if 'h1' == self.recaptch_header:
+            input("Please complete the reCaptcha...\n...\n...\n...")
+
+        # logged in - list view page
+        cookies_string = '; '.join(
+            [f"{cookie.get('name')}={cookie.get('value')}" for cookie in self.driver.get_cookies()]
+        )
         self.headers = {
             'x-requested-with': 'XMLHttpRequest',
             'cookie': cookies_string
         }
-        driver.quit()
+        self.driver.quit()
         yield Request(url=self.api_url, headers=self.headers)
+
+        # try:
+        #     element_present = EC.visibility_of_element_located((By.XPATH, '//*[@id="login_username"]'))
+        #     WebDriverWait(self.driver, 10).until(element_present)
+        # except TimeoutException:
+        #     self.driver.save_screenshot("../info/errors/screenshot.png")
+        #     with open('../info/errors/page.html', 'w') as file:
+        #         file.write(self.driver.page_source)
+        #     self.driver.quit()
+        #     raise CloseSpider('Timeout exception when getting the login page')
+
+        # fill username and hit enter
+        # self.driver.find_element_by_xpath('//*[@id="login_username"]').click()
+        # self.driver.find_element_by_xpath('//*[@id="login_username"]').send_keys(cf.arg_username)
+        # self.driver.find_element_by_xpath('//*[@id="login_password_continue"]').click()
+        # try:
+        #     element_present = EC.visibility_of_element_located((By.XPATH, '//*[@id="login_password"]'))
+        #     WebDriverWait(self.driver, 10).until(element_present)
+        # except TimeoutException:
+        #     self.driver.save_screenshot("../info/errors/screenshot.png")
+        #     with open('../info/errors/page.html', 'w') as file:
+        #         file.write(self.driver.page_source)
+        #     self.driver.quit()
+        #     raise CloseSpider('Timeout exception when getting the login page')
+
+        # fill in password and hit enter
+        # self.driver.find_element_by_xpath('//*[@id="login_password"]').click()
+        # self.driver.find_element_by_xpath('//*[@id="login_password"]').send_keys('Argyleawesome123!')
+        # self.driver.find_element_by_xpath('//*[@id="login_control_continue"]').click()
+        # try:
+        #     element_present = EC.visibility_of_element_located((By.XPATH, '//*[contains(@class, "job-title-link")]'))
+        #     WebDriverWait(self.driver, 15).until(element_present)
+        # except TimeoutException:
+        #     self.driver.save_screenshot("../info/errors/screenshot.png")
+        #     with open('../info/errors/page.html', 'w') as file:
+        #         file.write(self.driver.page_source)
+        #     self.driver.quit()
+        #     raise CloseSpider('Timeout exception after submiting password')
 
     def parse(self, response):
         # get pagination data from api
@@ -93,3 +120,19 @@ class UpworkSpider(Spider):
         for item in items:
             print(item)
 
+    # class helper functions ===========================================================================================
+    def form_input_and_click(self, input_xpath: str, input_value: str, continue_btn_xpath: str):
+        self.driver.find_element_by_xpath(input_xpath).click()
+        self.driver.find_element_by_xpath(input_xpath).send_keys(input_value)
+        self.driver.find_element_by_xpath(continue_btn_xpath).click()
+
+    def check_html_element_exists(self, element_xpath: str, wait_time: int, fail_message: str):
+        try:
+            element_present = EC.visibility_of_element_located((By.XPATH, element_xpath))
+            WebDriverWait(self.driver, wait_time).until(element_present)
+        except TimeoutException:
+            self.driver.save_screenshot("../info/errors/screenshot.png")
+            with open('../info/errors/page.html', 'w') as file:
+                file.write(self.driver.page_source)
+            self.driver.quit()
+            raise CloseSpider(fail_message)

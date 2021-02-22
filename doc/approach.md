@@ -1,3 +1,5 @@
+
+
 # Scanning Task
 
 
@@ -71,7 +73,7 @@ Will use selenium to get passed the login page
 
 Start url: https://www.upwork.com/ab/account-security/login
 
-##### Page
+#### Username Page
 
 ![image-20210217123441351](/Users/br20069521/Library/Application Support/typora-user-images/image-20210217123441351.png)
 
@@ -87,6 +89,10 @@ Start url: https://www.upwork.com/ab/account-security/login
 <button data-v-0c7bde74="" data-v-733406b2="" id="login_password_continue" button-role="continue" type="button" class="up-btn mr-0 full-width mb-0 up-btn-primary" data-v-44072c38="">Continue</button>
 ```
 
+
+
+#### Password Page
+
 ![Screenshot 2021-02-17 at 12.42.44](/Users/br20069521/Desktop/Screenshot 2021-02-17 at 12.42.44.png)
 
 ##### password input
@@ -100,6 +106,16 @@ Start url: https://www.upwork.com/ab/account-security/login
 ```html
 <button data-v-0c7bde74="" data-v-58ebcdf7="" id="login_control_continue" button-role="continue" type="button" class="up-btn mr-0 width-sm mb-0 up-btn-primary" data-v-44072c38="">Log in</button>
 ```
+
+
+
+#### Security Question Page
+
+
+
+
+
+
 
 ##### python
 
