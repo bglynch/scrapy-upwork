@@ -11,7 +11,6 @@ class Client(BaseModel):
     reviews_count: Optional[int]
 
     def set_country(self, country: str):
-        print('set_country', country)
         iso_3166_country = pycountry.countries.search_fuzzy(country)
         self.country = iso_3166_country[0].alpha_2
 

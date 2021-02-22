@@ -20,8 +20,8 @@ class UpworkSpider(Spider):
     allowed_domains = ['upwork.com']
     login_url = 'https://www.upwork.com/ab/account-security/login'
     api_url = 'https://www.upwork.com/ab/find-work/api/feeds/search?user_location_match=1'
-    headers: dict = None
-    item_count: int = None
+    headers: dict
+    item_count: int
     max_items_per_request: int = 100
     driver: webdriver
     secret_header_text = "Let's make sure it's you"
@@ -30,6 +30,8 @@ class UpworkSpider(Spider):
 
     def __init__(self, name=None, **kwargs):
         super().__init__(name, **kwargs)
+        # self.tear_down_output()
+        # self.create_output()
         # shutil.rmtree('../info/errors', ignore_errors=True)
 
     def start_requests(self):
@@ -48,7 +50,6 @@ class UpworkSpider(Spider):
             PAUSING SPIDER FOR RECAPTCHA...
               - complete the recaptha
               - once complete, press enter in the terminal to continue the spider
-              
               ''')
 
         # login - username page
@@ -62,6 +63,15 @@ class UpworkSpider(Spider):
         password_continue_btn = '//*[@id="login_control_continue"]'
         self.check_html_element_exists(password_input_box, 15, 'Timeout exception when getting the password page')
         self.form_input_and_click_btn(password_input_box, cf.password, password_continue_btn)
+
+        self.check_html_element_exists('//h1', 15, 'Timeout exception: h1 not available')
+        # login - reCaptcha
+        if self.check_text_equals('//*[@class="page-title"]/h1/text()', self.recaptcha_header):
+            input('''
+            PAUSING SPIDER FOR RECAPTCHA...
+              - complete the recaptha
+              - once complete, press enter in the terminal to continue the spider
+              ''')
 
         # login - secret answer page
         if self.check_text_equals('//h1/descendant::*/text()', self.secret_header_text):
@@ -80,6 +90,7 @@ class UpworkSpider(Spider):
             'x-requested-with': 'XMLHttpRequest',
             'cookie': cookies_string
         }
+        print(cookies_string)
         self.driver.quit()
         yield Request(url=self.api_url, headers=self.headers)
 
