@@ -11,6 +11,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from argyle_challenge import config as cf
+from argyle_challenge.models.argyle import Job
 import time
 
 
@@ -21,7 +22,7 @@ class UpworkSpider(Spider):
     api_url = 'https://www.upwork.com/ab/find-work/api/feeds/search?user_location_match=1'
     headers: dict = None
     item_count: int = None
-    max_item_count: int = 100
+    max_items_per_request: int = 100
     driver = webdriver.Chrome('../chromedriver')
     secret_header_text = "Let's make sure it's you"
     recaptcha_header = "Please verify you are a human"
@@ -52,20 +53,20 @@ class UpworkSpider(Spider):
         username_input_box = '//*[@id="login_username"]'
         username_continue_btn = '//*[@id="login_password_continue"]'
         self.check_html_element_exists(username_input_box, 15, 'Timeout exception when getting the login page')
-        self.form_input_and_click_btn(username_input_box, cf.arg_username, username_continue_btn)
+        self.form_input_and_click_btn(username_input_box, cf.username, username_continue_btn)
 
         # login - password page
         password_input_box = '//*[@id="login_password"]'
         password_continue_btn = '//*[@id="login_control_continue"]'
         self.check_html_element_exists(password_input_box, 15, 'Timeout exception when getting the password page')
-        self.form_input_and_click_btn(password_input_box, cf.arg_password, password_continue_btn)
+        self.form_input_and_click_btn(password_input_box, cf.password, password_continue_btn)
 
         # login - secret answer page
         if self.check_text_equals('//h1/descendant::*/text()', self.secret_header_text):
             secret_input_box = '//*[@id="login_deviceAuthorization_answer"]'
             secret_continue_btn = '//*[@id="login_control_continue"]'
             self.check_html_element_exists(secret_input_box, 15, 'Timeout exception when getting the password page')
-            self.form_input_and_click_btn(secret_input_box, cf.arg_secret_answer, secret_continue_btn)
+            self.form_input_and_click_btn(secret_input_box, cf.secret_answer, secret_continue_btn)
 
         # logged in - list view page
         thumbs_down_btn = '//*[@class="job-feedback"]'
@@ -85,7 +86,7 @@ class UpworkSpider(Spider):
         data = json.loads(response.body)
         # TODO check api has the expected keys
         item_count = data.get('paging').get('total')
-        number_of_pages = math.ceil(item_count / self.max_item_count)
+        number_of_pages = math.ceil(item_count / self.max_items_per_request)
         for page_number in range(number_of_pages):
             request = f"https://www.upwork.com/ab/find-work/api/feeds/search?paging={page_number};{item_count}&user_location_match=1"
             yield Request(url=request, headers=self.headers, callback=self.get_data_from_api)
