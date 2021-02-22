@@ -11,7 +11,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from argyle_challenge import config as cf
-from argyle_challenge.models.argyle import Job
+from argyle_challenge.models.argyle import Job, Client, Payment
 import time
 
 
@@ -23,10 +23,10 @@ class UpworkSpider(Spider):
     headers: dict = None
     item_count: int = None
     max_items_per_request: int = 100
-    driver = webdriver.Chrome('../chromedriver')
+    driver: webdriver
     secret_header_text = "Let's make sure it's you"
     recaptcha_header = "Please verify you are a human"
-    found_jobs: list[str]
+    found_jobs: list[Job] = []
 
     def __init__(self, name=None, **kwargs):
         super().__init__(name, **kwargs)
@@ -39,6 +39,7 @@ class UpworkSpider(Spider):
         """
 
         # create selenium driver and get login page
+        self.driver = webdriver.Chrome('../chromedriver')
         self.driver.get(self.login_url)
 
         # login - reCaptcha
@@ -71,7 +72,7 @@ class UpworkSpider(Spider):
 
         # logged in - list view page
         thumbs_down_btn = '//*[@class="job-feedback"]'
-        self.check_html_element_exists(thumbs_down_btn, 15, 'Timeout exception when getting the list view page')
+        self.check_html_element_exists(thumbs_down_btn, 25, 'Timeout exception when getting the list view page')
         cookies_string = '; '.join(
             [f"{cookie.get('name')}={cookie.get('value')}" for cookie in self.driver.get_cookies()]
         )
@@ -96,7 +97,12 @@ class UpworkSpider(Spider):
         data = json.loads(response.body)
         items = data.get('results')
         for item in items:
-            print(item)
+            self.transform_item_to_job(item)
+
+    def close(self, spider, reason):
+        if reason == "finished":
+            self.export_jobs_to_json(cf.output_file_path)
+        return super().close(spider, reason)
 
     # class helper functions ===========================================================================================
     def form_input_and_click_btn(self, input_xpath: str, input_value: str, continue_btn_xpath: str):
@@ -110,8 +116,8 @@ class UpworkSpider(Spider):
             WebDriverWait(self.driver, wait_time).until(element_present)
             time.sleep(2)
         except TimeoutException:
-            self.driver.save_screenshot("../info/errors/screenshot.png")
-            with open('../info/errors/page.html', 'w') as file:
+            self.driver.save_screenshot(f"{cf.errors_dir_path}/screenshot.png")
+            with open(f'{cf.errors_dir_path}/page.html', 'w') as file:
                 file.write(self.driver.page_source)
             self.driver.quit()
             raise CloseSpider(fail_message)
@@ -137,11 +143,22 @@ class UpworkSpider(Spider):
         job.set_attributes(item.get('attrs'))
         job.service = item.get('occupations').get('oservice').get('prefLabel')
 
-        client: dict = item.get('client')
-        job.client.set_country(client.get('location').get('country'))
-        job.client.set_payment_verified(client.get('paymentVerificationStatus'))
-        job.client.rating = client.get('totalFeedback')
-        job.client.reviews_count = client.get('totalReviews')
+        client = Client()
+        client_data: dict = item.get('client')
+        client.set_country(client_data.get('location').get('country', None))
+        client.set_payment_verified(client_data.get('paymentVerificationStatus'))
+        client.rating = client_data.get('totalFeedback')
+        client.reviews_count = client_data.get('totalReviews')
+        job.client = client
 
-        job.payment.currency = item.get('amount').get('currencyCode')
-        job.payment.set_type_and_amount(item)
+        payment = Payment()
+        payment.currency = item.get('amount').get('currencyCode')
+        payment.set_type_and_amount(item)
+        job.payment = payment
+
+        self.found_jobs.append(job)
+
+    def export_jobs_to_json(self, file_path):
+        json_string = json.dumps([job.json() for job in self.found_jobs])
+        with open(file_path, "w") as file:
+            file.write(json_string)
