@@ -171,6 +171,6 @@ class UpworkSpider(Spider):
         self.found_jobs.append(job)
 
     def export_jobs_to_json(self, file_path):
-        json_string = json.dumps([job.json() for job in self.found_jobs])
-        with open(file_path, "w") as file:
-            file.write(json_string)
+        jobs = [job.dict() for job in self.found_jobs]
+        with open(file_path, 'w') as fout:
+            json.dump(jobs, fout)
