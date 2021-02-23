@@ -10,7 +10,7 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from argyle_challenge import config as cf
+from argyle_challenge import config as cf, secret as sc
 from argyle_challenge.models.argyle import Job, Client, Payment
 import time
 
@@ -24,8 +24,6 @@ class UpworkSpider(Spider):
     item_count: int
     max_items_per_request: int = 100
     driver: webdriver
-    secret_header_text = "Let's make sure it's you"
-    recaptcha_header = "Please verify you are a human"
     found_jobs: list[Job] = []
 
     def __init__(self, name=None, **kwargs):
@@ -48,7 +46,7 @@ class UpworkSpider(Spider):
         self.driver.get(self.login_url)
 
         # login - reCaptcha
-        if self.check_text_equals('//*[@class="page-title"]/h1/text()', self.recaptcha_header):
+        if self.check_text_equals('//*[@class="page-title"]/h1/text()', cf.recaptcha_header):
             input('''
             PAUSING SPIDER FOR RECAPTCHA...
               - complete the recaptha
@@ -59,17 +57,17 @@ class UpworkSpider(Spider):
         username_input_box = '//*[@id="login_username"]'
         username_continue_btn = '//*[@id="login_password_continue"]'
         self.check_html_element_exists(username_input_box, 15, 'Timeout exception when getting the login page')
-        self.form_input_and_click_btn(username_input_box, cf.username, username_continue_btn)
+        self.form_input_and_click_btn(username_input_box, sc.username, username_continue_btn)
 
         # login - password page
         password_input_box = '//*[@id="login_password"]'
         password_continue_btn = '//*[@id="login_control_continue"]'
         self.check_html_element_exists(password_input_box, 15, 'Timeout exception when getting the password page')
-        self.form_input_and_click_btn(password_input_box, cf.password, password_continue_btn)
+        self.form_input_and_click_btn(password_input_box, sc.password, password_continue_btn)
 
         self.check_html_element_exists('//h1', 15, 'Timeout exception: h1 not available')
         # login - reCaptcha
-        if self.check_text_equals('//*[@class="page-title"]/h1/text()', self.recaptcha_header):
+        if self.check_text_equals('//*[@class="page-title"]/h1/text()', cf.recaptcha_header):
             input('''
             PAUSING SPIDER FOR RECAPTCHA...
               - complete the recaptha
@@ -77,11 +75,11 @@ class UpworkSpider(Spider):
               ''')
 
         # login - secret answer page
-        if self.check_text_equals('//h1/descendant::*/text()', self.secret_header_text):
+        if self.check_text_equals('//h1/descendant::*/text()', cf.secret_header_text):
             secret_input_box = '//*[@id="login_deviceAuthorization_answer"]'
             secret_continue_btn = '//*[@id="login_control_continue"]'
             self.check_html_element_exists(secret_input_box, 15, 'Timeout exception when getting the password page')
-            self.form_input_and_click_btn(secret_input_box, cf.secret_answer, secret_continue_btn)
+            self.form_input_and_click_btn(secret_input_box, sc.secret_answer, secret_continue_btn)
 
         # logged in - list view page
         thumbs_down_btn = '//*[@class="job-feedback"]'
@@ -130,8 +128,8 @@ class UpworkSpider(Spider):
             WebDriverWait(self.driver, wait_time).until(element_present)
             time.sleep(2)
         except TimeoutException:
-            self.driver.save_screenshot(f"{cf.errors_dir_path}/screenshot.png")
-            with open(f'{cf.errors_dir_path}/page.html', 'w') as file:
+            self.driver.save_screenshot(cf.error_screenshot)
+            with open(cf.error_html, 'w') as file:
                 file.write(self.driver.page_source)
             self.driver.quit()
             raise CloseSpider(fail_message)
@@ -154,15 +152,15 @@ class UpworkSpider(Spider):
         job.experience_level = item.get('tierText', None)
         job.location_mandatory = item.get('prefFreelancerLocationMandatory', None)
         job.set_freelancer_location(item.get('prefFreelancerLocation', None))
-        job.set_attributes(item.get('attrs'))
-        job.service = item.get('occupations').get('oservice').get('prefLabel')
+        job.set_attributes(item.get('attrs', None))
+        job.service = item.get('occupations').get('oservice', None).get('prefLabel', None)
 
         client = Client()
         client_data: dict = item.get('client')
-        client.set_country(client_data.get('location').get('country', None))
-        client.set_payment_verified(client_data.get('paymentVerificationStatus'))
-        client.rating = client_data.get('totalFeedback')
-        client.reviews_count = client_data.get('totalReviews')
+        client.set_country(client_data.get('location', None).get('country', None))
+        client.set_payment_verified(client_data.get('paymentVerificationStatus', None))
+        client.rating = client_data.get('totalFeedback', None)
+        client.reviews_count = client_data.get('totalReviews', None)
         job.client = client
 
         payment = Payment()
