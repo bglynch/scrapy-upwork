@@ -28,7 +28,7 @@ python, scrapy, selenium
 
 ## Spider Flow
 
-![login-flow-diagram](/Users/br20069521/Desktop/github/argyle-scraper/doc/assets/login-flow-diagram.jpg)
+![login-flow-diagram](assets/login-flow-diagram.jpg)
 
 
 
@@ -102,7 +102,7 @@ solution: use selenium to input secret answer and click continue
 
 solution: pause the scraper by asking for user input. Let user complete the reCAPTCHA process and prompt the scraper to continue
 
-![recaptcha - page](/Users/br20069521/Desktop/github/argyle-scraper/doc/assets/recaptcha - page.png)
+![recaptcha - page](assets/recaptcha - page.png)
 
 
 
@@ -253,97 +253,11 @@ Points of interest
 
 
 
-```json
-{
-"title": "Design a Microsoft Excel report system",
-"createdOn": "2021-02-18T03:10:11+00:00",
-"type": 1,
-"ciphertext": "~01f4053f6d37b4f9f2",
-"description": "Design a Microsoft report system given sample report.  One time job",
-"category2": null,
-"subcategory2": null,
-"skills": [],
-"duration": null,
-"shortDuration": null,
-"durationLabel": null,
-"engagement": null,
-"shortEngagement": null,
-"amount": {
-    "currencyCode": "USD",
-    "amount": 500
-},
-"uid": "1362237947263033344",
-"client": {
-    "paymentVerificationStatus": null,
-    "location": {
-      "country": "United States"
-    },
-    "totalSpent": 0,
-    "totalReviews": 0,
-    "totalFeedback": 0,
-    "companyRid": 0,
-    "companyName": null,
-    "edcUserId": 0,
-    "lastContractPlatform": null,
-    "lastContractRid": 0,
-    "lastContractTitle": null,
-    "feedbackText": "No feedback yet",
-    "companyOrgUid": "1257257427128717312",
-    "hasFinancialPrivacy": false
-},
-"freelancersToHire": 0,
-"relevanceEncoded": "{\u0022position\u0022:\u00220\u0022}",
-"enterpriseJob": false,
-"tierText": "Intermediate",
-"tier": "Intermediate",
-"tierLabel": "Experience Level",
-"isSaved": null,
-"feedback": "",
-"proposalsTier": "5 to 10",
-"isApplied": false,
-"sticky": false,
-"stickyLabel": "",
-"jobTs": "1613617811311",
-"prefFreelancerLocationMandatory": true,
-"prefFreelancerLocation": ["United States"],
-"premium": false,
-"plusBadge": null,
-"publishedOn": "2021-02-18T03:10:11+00:00",
-"renewedOn": null,
-"sandsService": null,
-"sandsSpec": null,
-"sandsAttrs": null,
-"occupation": null,
-"attrs": [
-    {
-    "prettyName": "Microsoft Excel"
-    },
-    {
-    "prettyName": "PDF Conversion"
-    }
-],
-"isLocal": false,
-"workType": null,
-"locations": [],
-"occupations": {
-    "oservice": {
-        "prefLabel": "Database Administration"
-    }
-},
-"weeklyBudget": null,
-"hourlyBudgetText": null,
-"tags": [],
-"clientRelation": null
-}
-```
-
-
-
 ### Job Details Page - Item View
 
 After clicking on a list item, we are taken to a job details page.
 
-![item-view](/Users/br20069521/Desktop/github/argyle-scraper/doc/assets/item-view.png)
+![item-view](assets/item-view.png)
 
 
 
