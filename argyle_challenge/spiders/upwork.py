@@ -30,9 +30,12 @@ class UpworkSpider(Spider):
 
     def __init__(self, name=None, **kwargs):
         super().__init__(name, **kwargs)
-        # self.tear_down_output()
-        # self.create_output()
-        # shutil.rmtree('../info/errors', ignore_errors=True)
+        # remove output folder
+        shutil.rmtree('../output/', ignore_errors=True)
+        # create blank output folder
+        os.makedirs('../output/data')
+        os.makedirs('../output/info')
+        os.makedirs('../output/errors')
 
     def start_requests(self):
         """
@@ -90,7 +93,6 @@ class UpworkSpider(Spider):
             'x-requested-with': 'XMLHttpRequest',
             'cookie': cookies_string
         }
-        print(cookies_string)
         self.driver.quit()
         yield Request(url=self.api_url, headers=self.headers)
 
@@ -101,7 +103,8 @@ class UpworkSpider(Spider):
         item_count = data.get('paging').get('total')
         number_of_pages = math.ceil(item_count / self.max_items_per_request)
         for page_number in range(number_of_pages):
-            request = f"https://www.upwork.com/ab/find-work/api/feeds/search?paging={page_number};{item_count}&user_location_match=1"
+            request = f"https://www.upwork.com/ab/find-work/api/feeds/search?paging={page_number};" \
+                      f"{item_count}&user_location_match=1"
             yield Request(url=request, headers=self.headers, callback=self.get_data_from_api)
 
     def get_data_from_api(self, response):
