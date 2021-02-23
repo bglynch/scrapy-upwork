@@ -8,7 +8,9 @@ This is a single spider scrapy project.
 
 Given a username, password and secret answer, this spider will log in to upwark.com and scrape data from the /find-jobs/ page.
 
-This spider handle the zero resistance login flow as well as handling **reCAPTCHA** and a **secret answer** page. The secret answer page bypass is automated, while the reCAPTCHA page requires user input to bypass. To do this, if a reCAPTCHA page appears the spider is paused. Once the user completes the reCAPTCHA, a user must click enter inside the terminal to continue the spider.
+This spider handles the zero resistance login flow as well as handling **reCAPTCHA** and a **secret answer** pages. The secret answer page bypass is automated, while the reCAPTCHA page requires user input to bypass. To do this, if a reCAPTCHA page appears the spider is paused. Once the user completes the reCAPTCHA, a user must click enter inside the terminal to continue the spider.
+
+If the spider stalls on a page, errors are handled using selenium timeouts. If selenium raises a timeout error, a screenshot will be taken of the page and the html will be downloaded. These will be saved to the **scrapy-upwork/output/errors/** directory to be used for debugging.
 
 
 
@@ -69,3 +71,4 @@ scrapy crawl upwork
 
 
 After running, if successful, data is exported to **scrapy-upwork/output/data/jobs.json**
+
