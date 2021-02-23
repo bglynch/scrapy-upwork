@@ -20,54 +20,19 @@ Portal link:   https://www.upwork.com/ab/account-security/login
 
 
 
-#### Detailed Task
-
-###### Level 01
-
-- Log into the portal using credentials
-
-- scan the main portal page and return the information which you think is valuable
-
-- Save the result to a file in a **json format**
-
-- ```json
-  {
-    "name": "<scraped_name>",
-    "surname":"<scraped_surname>",
-    ....
-  }
-  ```
-
-  
-
-###### Level 02
-
-- Get information from profile settings as per https://argyle.com/docs/api-reference/profiles
-- Find an elegant way to handle missing fields and communicate it via response
-- Make data serializable to an object (example using https://pydantic-docs.helpmanual.io/)
-
-###### Level 03
-
-- Handle possible errors
-- Retry if the scanning fails
-
-###### Nice to haves..
-
-- Docker image implementation
-- performance improvements
-- lint
-- mypy checks
-- dependency management
-
-
-
 ## Stack
 
 python, scrapy, selenium
 
 
 
-## Login
+## Spider Flow
+
+![login-flow-diagram](/Users/br20069521/Desktop/github/argyle-scraper/doc/assets/login-flow-diagram.jpg)
+
+
+
+### Before Login
 
 Will use selenium to get passed the login page
 
@@ -75,7 +40,9 @@ Start url: https://www.upwork.com/ab/account-security/login
 
 #### Username Page
 
-![image-20210217123441351](/Users/br20069521/Library/Application Support/typora-user-images/image-20210217123441351.png)
+solution: use selenium to input username and click continue
+
+![login-username](assets/login-username.png)
 
 ##### username input
 
@@ -93,7 +60,9 @@ Start url: https://www.upwork.com/ab/account-security/login
 
 #### Password Page
 
-![Screenshot 2021-02-17 at 12.42.44](/Users/br20069521/Desktop/Screenshot 2021-02-17 at 12.42.44.png)
+solution: use selenium to input password and click log in
+
+![login-password](assets/login-password.png)
 
 ##### password input
 
@@ -111,42 +80,29 @@ Start url: https://www.upwork.com/ab/account-security/login
 
 #### Security Question Page
 
+solution: use selenium to input secret answer and click continue
 
+![login-security_answer](assets/login-security_answer.png)
 
+##### username input
 
+```html
+<input data-v-9baadd78="" data-v-17f0650e="" id="login_deviceAuthorization_answer" name="login[deviceAuthorization][answer]" placeholder="Your Answer" type="password" class="up-input">
+```
 
+##### continue button
 
-
-##### python
-
-```python
-from selenium import webdriver
-
-driver = webdriver.Chrome('./chromedriver')
-driver.get('http://upwork.com')
-# username page
-driver.find_element_by_xpath('//*[@id="login_username"]').click()
-driver.find_element_by_xpath('//*[@id="login_username"]').send_keys('bobsuperworker')
-driver.find_element_by_xpath('//*[@id="login_password_continue"]').click()
-# password page
-driver.find_element_by_xpath('//*[@id="login_password"]').click()
-driver.find_element_by_xpath('//*[@id="login_password"]').send_keys('Argyleawesome123!')
-driver.find_element_by_xpath('//*[@id="login_control_continue"]').click()
-# secret answer page
-
-
-driver = webdriver.Chrome('./chromedriver')
-driver.get('https://www.upwork.com/ab/account-security/login')
-driver.find_element_by_xpath('//*[@id="login_username"]').send_keys('bobsuperworker')
-driver.find_element_by_xpath('//*[@id="login_username"]').send_keys(Keys.TAB)
-driver.find_element_by_xpath('//*[@id="login_username"]').send_keys(Keys.ENTER)
-driver.find_element_by_xpath('//*[@id="login_password"]').send_keys('Argyleawesome123!')
-driver.find_element_by_xpath('//*[@id="login_control_continue"]').click()
-
-
+```html
+<button data-v-0c7bde74="" data-v-3eaab1b2="" id="login_control_continue" button-role="continue" type="button" class="up-btn mr-0 width-sm up-btn-primary" data-v-f2a8dda2="">Continue</button>
 ```
 
 
+
+#### reCaptcha page
+
+solution: pause the scraper by asking for user input. Let user complete the reCAPTCHA process and prompt the scraper to continue
+
+![recaptcha - page](/Users/br20069521/Desktop/github/argyle-scraper/doc/assets/recaptcha - page.png)
 
 
 
@@ -154,7 +110,9 @@ driver.find_element_by_xpath('//*[@id="login_control_continue"]').click()
 
 After login user  is redirected to https://www.upwork.com/ab/find-work/domestic
 
-![Screenshot 2021-02-18 at 14.55.40](/Users/br20069521/Desktop/Screenshot 2021-02-18 at 14.55.40.png)
+![list-view](assets/list-view.png)
+
+
 
 Looking at XHR request in chrome dev tools can see there is a GET reqest to upworks API
 
@@ -162,7 +120,7 @@ Looking at XHR request in chrome dev tools can see there is a GET reqest to upwo
 
 This returns the following JSON
 
-![Screenshot 2021-02-18 at 14.41.18](/Users/br20069521/Desktop/Screenshot 2021-02-18 at 14.41.18.png)
+<img src="assets/api-json.png" alt="api-json" style="zoom:150%;" />
 
 Points of interest
 
@@ -295,21 +253,107 @@ Points of interest
 
 
 
-### Job Details Page
+```json
+{
+"title": "Design a Microsoft Excel report system",
+"createdOn": "2021-02-18T03:10:11+00:00",
+"type": 1,
+"ciphertext": "~01f4053f6d37b4f9f2",
+"description": "Design a Microsoft report system given sample report.  One time job",
+"category2": null,
+"subcategory2": null,
+"skills": [],
+"duration": null,
+"shortDuration": null,
+"durationLabel": null,
+"engagement": null,
+"shortEngagement": null,
+"amount": {
+    "currencyCode": "USD",
+    "amount": 500
+},
+"uid": "1362237947263033344",
+"client": {
+    "paymentVerificationStatus": null,
+    "location": {
+      "country": "United States"
+    },
+    "totalSpent": 0,
+    "totalReviews": 0,
+    "totalFeedback": 0,
+    "companyRid": 0,
+    "companyName": null,
+    "edcUserId": 0,
+    "lastContractPlatform": null,
+    "lastContractRid": 0,
+    "lastContractTitle": null,
+    "feedbackText": "No feedback yet",
+    "companyOrgUid": "1257257427128717312",
+    "hasFinancialPrivacy": false
+},
+"freelancersToHire": 0,
+"relevanceEncoded": "{\u0022position\u0022:\u00220\u0022}",
+"enterpriseJob": false,
+"tierText": "Intermediate",
+"tier": "Intermediate",
+"tierLabel": "Experience Level",
+"isSaved": null,
+"feedback": "",
+"proposalsTier": "5 to 10",
+"isApplied": false,
+"sticky": false,
+"stickyLabel": "",
+"jobTs": "1613617811311",
+"prefFreelancerLocationMandatory": true,
+"prefFreelancerLocation": ["United States"],
+"premium": false,
+"plusBadge": null,
+"publishedOn": "2021-02-18T03:10:11+00:00",
+"renewedOn": null,
+"sandsService": null,
+"sandsSpec": null,
+"sandsAttrs": null,
+"occupation": null,
+"attrs": [
+    {
+    "prettyName": "Microsoft Excel"
+    },
+    {
+    "prettyName": "PDF Conversion"
+    }
+],
+"isLocal": false,
+"workType": null,
+"locations": [],
+"occupations": {
+    "oservice": {
+        "prefLabel": "Database Administration"
+    }
+},
+"weeklyBudget": null,
+"hourlyBudgetText": null,
+"tags": [],
+"clientRelation": null
+}
+```
+
+
+
+### Job Details Page - Item View
 
 After clicking on a list item, we are taken to a job details page.
 
-![image-20210218150805440](/Users/br20069521/Library/Application Support/typora-user-images/image-20210218150805440.png)
+![item-view](/Users/br20069521/Desktop/github/argyle-scraper/doc/assets/item-view.png)
 
 
 
 
 
-### Performance - reducing requests to upwork server
+## Performance - reducing requests to the Upwork server
 
 As most of the information here is available from the <u>list view API</u> we may not need to scrape each profile page.
 
-This would greatly reduce the number of request needed.
+This would greatly reduce the number of requests needed.
 
 54 items across 6 pages:
 
@@ -322,42 +366,12 @@ Looking further into the API, we can see the next page url is:
 
 - https://www.upwork.com/ab/find-work/api/feeds/search?max_result_set_ts=1613666702146&paging=10;10&user_location_match=1
 
-- after testing the url in postman we can decide the number of items per page by changing the **10** before the ''**&**'' sign
+
+
+After testing the url in postman we can decide the number of items per page by changing the **10** before the ''**&**'' sign
+
 - as we have the pagination info from the initial request we can get all the items with 2 requests
   - 1st: to get paginaton info with number of items (e.g. 53)
   - 2nd: https://www.upwork.com/ab/find-work/api/feeds/search?paging=0;53&user_location_match=1
-
-
-
-#### Data Model
-
-```
-uid: str
-url: str
-title: str
-description:str
-date_posted: str (ISO 8601)
-country: str (ISO 3166-1 alpha-2 format)
-attributes: list[str]
-project_type: str
-
-project:
-	duration
-	engagement
-	payment:
-		type: str
-		amount: str
-	experience_level: str
-	prefFreelancerLocationMandatory: bool
-occupation:
-	category
-	subcategory
-	service
-client:
-	location: str
-	paymentVerificationStatus: bool
-	rating: int
-	reviews: float
-
-```
+- This means we only have to do **two requests to the server (97% reduction)**
 
